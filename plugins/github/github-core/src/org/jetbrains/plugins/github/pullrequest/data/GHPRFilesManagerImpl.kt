@@ -65,6 +65,17 @@ internal class GHPRFilesManagerImpl(
     }
   }
 
+  override suspend fun closeTimelineFile(prId: GHPRIdentifier) {
+    withContext(Dispatchers.EDT) {
+      val path = fs.getPath(id, project, repository, prId, false)
+      val file = fs.refreshAndFindFileByPath(path) ?: return@withContext
+      val fileManager = project.serviceAsync<FileEditorManager>()
+      edtWriteAction {
+        CodeReviewFilesUtil.closeFilesSafely(fileManager, listOf(file))
+      }
+    }
+  }
+
   override suspend fun closeAllFiles() {
     withContext(Dispatchers.EDT) {
       if (project.isDisposed) return@withContext

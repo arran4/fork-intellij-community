@@ -17,5 +17,7 @@ internal interface GHPRFilesManager {
 
   suspend fun closeNewPrFile()
 
+  suspend fun closeTimelineFile(prId: GHPRIdentifier)
+
   suspend fun closeAllFiles()
 }
