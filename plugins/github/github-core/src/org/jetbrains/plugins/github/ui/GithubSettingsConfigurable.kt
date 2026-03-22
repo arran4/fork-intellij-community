@@ -27,6 +27,7 @@ import org.jetbrains.plugins.github.i18n.GithubBundle.message
 import org.jetbrains.plugins.github.ui.util.GHPluginProjectScopeProvider
 import org.jetbrains.plugins.github.util.GithubSettings
 import org.jetbrains.plugins.github.util.GithubUtil
+import org.jetbrains.plugins.github.pullrequest.config.GithubPullRequestsProjectUISettings
 
 internal class GithubSettingsConfigurable internal constructor(
   private val project: Project
@@ -36,6 +37,7 @@ internal class GithubSettingsConfigurable internal constructor(
     val defaultAccountHolder = project.service<GithubProjectDefaultAccountHolder>()
     val accountManager = service<GHAccountManager>()
     val ghSettings = GithubSettings.getInstance()
+    val prSettings = GithubPullRequestsProjectUISettings.getInstance(project)
 
     val scope = scopeProvider.createDisposedScope(javaClass.name, disposable!!,
                                                   Dispatchers.EDT + ModalityState.any().asContextElement())
@@ -62,6 +64,10 @@ internal class GithubSettingsConfigurable internal constructor(
       row {
         checkBox(message("settings.enable.pr.seen.markers"))
           .bindSelected(ghSettings::isSeenMarkersEnabled, ghSettings::setIsSeenMarkersEnabled)
+      }
+      row {
+        checkBox("Close PR timeline file when focus is closed")
+          .bindSelected(prSettings::closeTimelineOnPRClose)
       }
       row(message("settings.timeout")) {
         intTextField(range = 0..60)

@@ -79,7 +79,17 @@ class GHPRToolWindowProjectViewModel internal constructor(
     GHPRToolWindowTabViewModel.PullRequest(cs, this, tab.prId)
 
   override fun selectTab(tab: GHPRToolWindowTab?) = tabsHelper.select(tab)
-  override fun closeTab(tab: GHPRToolWindowTab) = tabsHelper.close(tab)
+  override fun closeTab(tab: GHPRToolWindowTab) {
+    tabsHelper.close(tab)
+    if (tab is GHPRToolWindowTab.PullRequest) {
+      val settings = GithubPullRequestsProjectUISettings.getInstance(project)
+      if (settings.closeTimelineOnPRClose) {
+        cs.launch {
+          filesManager.closeTimelineFile(tab.prId)
+        }
+      }
+    }
+  }
 
   override fun closeNewPullRequest() {
     synchronized(lazyCreateVm) {

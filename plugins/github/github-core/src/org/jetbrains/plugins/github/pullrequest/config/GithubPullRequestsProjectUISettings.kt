@@ -32,6 +32,7 @@ internal class GithubPullRequestsProjectUISettings(private val project: Project)
     val reviewCommentPreferred: Boolean = true,
     val editorReviewEnabled: Boolean = true,
     val highlightDiffLinesInEditor: Boolean = false,
+    val closeTimelineOnPRClose: Boolean = false,
     val changesGrouping: Set<String> = setOf(ChangesGroupingSupport.DIRECTORY_GROUPING, ChangesGroupingSupport.MODULE_GROUPING),
     val editorReviewViewOption: DiscussionsViewOption = DiscussionsViewOption.UNRESOLVED_ONLY
   )
@@ -76,6 +77,12 @@ internal class GithubPullRequestsProjectUISettings(private val project: Project)
     get() = state.highlightDiffLinesInEditor
     set(value) = updateStateAndEmit {
       it.copy(highlightDiffLinesInEditor = value)
+    }
+
+  var closeTimelineOnPRClose: Boolean
+    get() = state.closeTimelineOnPRClose
+    set(value) = updateStateAndEmit {
+      it.copy(closeTimelineOnPRClose = value)
     }
 
   var changesGrouping: Set<String>
