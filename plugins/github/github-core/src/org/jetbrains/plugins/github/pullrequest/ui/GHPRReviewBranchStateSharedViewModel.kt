@@ -18,6 +18,12 @@ import org.jetbrains.plugins.github.pullrequest.data.GHPRDataContext
 import org.jetbrains.plugins.github.pullrequest.data.provider.GHPRDataProvider
 import org.jetbrains.plugins.github.pullrequest.data.provider.detailsComputationFlow
 import org.jetbrains.plugins.github.pullrequest.ui.details.model.GHPRBranchesViewModel
+import org.jetbrains.plugins.github.pullrequest.ui.details.model.GHPRBranchesViewModel.Companion.getRemoteDescriptor
+import git4idea.branch.GitBranchPair
+import git4idea.remote.hosting.GitRemoteBranchesUtil
+import git4idea.update.GitUpdateInfoAsLog
+import git4idea.update.GitUpdateSession
+import git4idea.update.GitUpdatedRanges
 import kotlin.coroutines.cancellation.CancellationException
 
 private val LOG = logger<GHPRReviewBranchStateSharedViewModel>()
@@ -60,6 +66,34 @@ internal class GHPRReviewBranchStateSharedViewModel(
       return
     }
     val server = dataContext.repositoryDataService.repositoryCoordinates.serverPath
+
+    var updateRanges: GitUpdatedRanges? = null
+    val remoteDescriptor = details.headRepository?.owner?.login?.let { owner ->
+        org.jetbrains.plugins.github.pullrequest.ui.details.model.GHPRBranchesViewModel.Companion.run {
+            details.headRepository?.getRemoteDescriptor(server)
+        }
+    }
+
+    if (remoteDescriptor != null) {
+      val remoteBranch = GitRemoteBranchesUtil.findRemoteBranch(repository.info, remoteDescriptor, details.headRefName)
+      if (remoteBranch != null) {
+        val localBranch = repository.currentBranch ?: repository.branches.findLocalBranch(details.headRefName)
+        if (localBranch != null) {
+          updateRanges = GitUpdatedRanges.calcInitialPositions(repository.project, mapOf(repository to GitBranchPair(localBranch, remoteBranch)))
+        }
+      }
+    }
+
     GHPRBranchesViewModel.fetchAndCheckoutBranch(repository, server, details)
+
+    if (updateRanges != null) {
+      val updatedPositions = updateRanges.calcCurrentPositions()
+      val updateNotificationData = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+          GitUpdateInfoAsLog(repository.project, updatedPositions).calculateDataAndCreateLogTab()
+      }
+      kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+          GitUpdateSession(repository.project, updateNotificationData, true, emptyMap()).showNotification()
+      }
+    }
   }
 }
