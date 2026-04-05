@@ -153,7 +153,8 @@ open class MultipleFileMergeDialog(
     getGroupByDirectory = { groupByDirectory },
     iterativeDataHolder = iterativeDataHolder,
     resolveAutomatically = { resolveAutomatically(project, iterativeDataHolder) },
-    updateTable = ::updateModelFromFiles
+    updateTable = ::updateModelFromFiles,
+    mergeProvider = mergeProvider
   )
   else OneShotMergeFlowDelegate(
     project = project,
@@ -165,7 +166,8 @@ open class MultipleFileMergeDialog(
     acceptForResolution = ::acceptForResolution,
     showMergeDialog = ::showMergeDialog,
     toggleGroupByDirectory = ::toggleGroupByDirectory,
-    getGroupByDirectory = { groupByDirectory })
+    getGroupByDirectory = { groupByDirectory },
+    mergeProvider = mergeProvider)
 
   init {
     project?.blockReloadingProjectOnExternalChanges()

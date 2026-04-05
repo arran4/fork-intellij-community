@@ -98,6 +98,7 @@ internal class IterativeMergeFlowDelegate(
   private val resolveAutomatically: () -> Unit,
   private val getGroupByDirectory: () -> Boolean,
   private val updateTable: () -> Unit,
+  private val mergeProvider: com.intellij.openapi.vcs.merge.MergeProvider,
 ) : MergeFlowDelegate {
 
   private lateinit var descriptionLabel: JLabel
@@ -381,6 +382,8 @@ internal class IterativeMergeFlowDelegate(
 
         override fun getActionUpdateThread(): ActionUpdateThread = ActionUpdateThread.EDT
       })
+      addSeparator()
+      add(com.intellij.openapi.vcs.merge.CopyMergeConflictDiffAction(project, table, mergeProvider))
     }
     PopupHandler.installPopupMenu(this, group, ActionPlaces.POPUP)
   }
