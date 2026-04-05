@@ -17,6 +17,9 @@ import com.intellij.ui.dsl.builder.AlignY
 import com.intellij.ui.dsl.builder.panel
 import com.intellij.ui.dsl.builder.selected
 import com.intellij.ui.treeStructure.treetable.TreeTable
+import com.intellij.ui.PopupHandler
+import com.intellij.openapi.actionSystem.ActionPlaces
+import com.intellij.openapi.actionSystem.DefaultActionGroup
 import com.intellij.util.ui.JBUI
 import com.intellij.util.ui.initOnShow
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +43,7 @@ internal class OneShotMergeFlowDelegate(
   private val showMergeDialog: () -> Unit,
   private val toggleGroupByDirectory: (Boolean) -> Unit,
   private val getGroupByDirectory: () -> Boolean,
+  private val mergeProvider: com.intellij.openapi.vcs.merge.MergeProvider,
 ) : MergeFlowDelegate {
 
   private lateinit var acceptYoursButton: JButton
@@ -105,6 +109,17 @@ internal class OneShotMergeFlowDelegate(
       // Temporary workaround for IDEA-302779
       minimumSize = JBUI.size(200, 150)
     }
+  }
+
+  private fun installTableContextMenu() {
+    val group = DefaultActionGroup().apply {
+      add(com.intellij.openapi.vcs.merge.CopyMergeConflictDiffAction(project, table, mergeProvider))
+    }
+    PopupHandler.installPopupMenu(table, group, ActionPlaces.POPUP)
+  }
+
+  init {
+    installTableContextMenu()
   }
 
   override fun createActions(): List<Action> {
