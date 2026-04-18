@@ -1,6 +1,12 @@
 // Copyright 2000-2025 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license.
 package git4idea.ui.branch.dashboard
 
+import com.intellij.openapi.progress.ProgressIndicator
+import com.intellij.openapi.progress.Task
+import git4idea.GitVcs
+import git4idea.fetch.GitFetchResult
+import git4idea.fetch.GitFetchSpec
+import git4idea.i18n.GitBundle
 import com.intellij.configurationStore.saveSettingsForRemoteDevelopment
 import com.intellij.dvcs.DvcsUtil.disableActionIfAnyRepositoryIsFresh
 import com.intellij.dvcs.branch.GroupingKey
@@ -87,13 +93,13 @@ internal object BranchesDashboardActions {
   class GroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayListOf<AnAction>(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
   }
 
   class MultipleGroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(RemoveRemoteAction()).toTypedArray()
+      arrayListOf<AnAction>(FetchRemoteAction(), RemoveRemoteAction()).toTypedArray()
   }
 
   class RemoteGlobalActions : ActionGroup(), DumbAware {
@@ -557,6 +563,26 @@ internal object BranchesDashboardActions {
       if (properties != null && properties.exists(SHOW_GIT_BRANCHES_LOG_PROPERTY)) {
         properties[SHOW_GIT_BRANCHES_LOG_PROPERTY] = false
       }
+    }
+  }
+
+  class FetchRemoteAction : RemoteActionBase(messagePointer("action.Git.Fetch.text")) {
+
+    override fun doAction(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
+      GitVcs.runInBackground(object : Task.Backgroundable(project, GitBundle.message("fetching"), true) {
+        var fetchResult: GitFetchResult? = null
+
+        override fun run(indicator: ProgressIndicator) {
+          val fetchSpecs = selectedRemotes.flatMap { (repository, remotes) ->
+            remotes.map { remote -> GitFetchSpec(repository, remote) }
+          }
+          fetchResult = GitFetchSupport.fetchSupport(project).fetch(fetchSpecs)
+        }
+
+        override fun onSuccess() {
+          fetchResult?.showNotification()
+        }
+      })
     }
   }
 

@@ -210,6 +210,7 @@ class GitBranchesTreeActionsForSelectionTest : GitBranchesTreeTest() {
 
     Mockito.`when`(branchesUiController.getSelectedRemotes()).thenReturn(mapOf(repo1 to setOf(ORIGIN)))
     assertActions(expected = listOf(
+      isEnabledAndVisible<BranchesDashboardActions.FetchRemoteAction>(),
       isEnabledAndVisible<BranchesDashboardActions.EditRemoteAction>(),
       isEnabledAndVisible<BranchesDashboardActions.RemoveRemoteAction>(),
     ))
