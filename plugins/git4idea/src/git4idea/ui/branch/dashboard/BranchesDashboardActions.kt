@@ -40,6 +40,7 @@ import git4idea.branch.GitRefType
 import git4idea.commands.Git
 import git4idea.config.GitVcsSettings
 import git4idea.fetch.GitFetchSupport
+import git4idea.GitVcs
 import git4idea.i18n.GitBundle.message
 import git4idea.i18n.GitBundleExtensions.messagePointer
 import git4idea.isRemoteBranchProtected
@@ -87,13 +88,13 @@ internal object BranchesDashboardActions {
   class GroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayOf(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction())
   }
 
   class MultipleGroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(RemoveRemoteAction()).toTypedArray()
+      arrayOf(FetchRemoteAction(), RemoveRemoteAction())
   }
 
   class RemoteGlobalActions : ActionGroup(), DumbAware {
@@ -584,6 +585,27 @@ internal object BranchesDashboardActions {
     override fun doAction(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
       val (repository, remotes) = selectedRemotes.entries.first()
       editRemote(Git.getInstance(), repository, remotes.first())
+    }
+  }
+
+  class FetchRemoteAction : RemoteActionBase(messagePointer("action.Git.Fetch.text")) {
+
+    override fun update(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
+      val isFetchRunning = GitFetchSupport.fetchSupport(project).isFetchRunning
+      e.presentation.isEnabled = !isFetchRunning
+      e.presentation.description = if (isFetchRunning) message("action.Git.Fetch.description.fetch.in.progress") else ""
+    }
+
+    override fun doAction(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
+      val remotesToFetch = selectedRemotes.flatMap { (repository, remotes) ->
+        remotes.map { com.intellij.openapi.util.Pair.create(repository, it) }
+      }
+      GitVcs.runInBackground(object : com.intellij.openapi.progress.Task.Backgroundable(project, message("fetching"), true) {
+        override fun run(indicator: com.intellij.openapi.progress.ProgressIndicator) {
+          val result = GitFetchSupport.fetchSupport(project).fetchRemotes(remotesToFetch)
+          com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater { result.showNotification() }
+        }
+      })
     }
   }
 
