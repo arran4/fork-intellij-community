@@ -87,13 +87,13 @@ internal object BranchesDashboardActions {
   class GroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayListOf<AnAction>(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
   }
 
   class MultipleGroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(RemoveRemoteAction()).toTypedArray()
+      arrayListOf<AnAction>(FetchRemoteAction(), RemoveRemoteAction()).toTypedArray()
   }
 
   class RemoteGlobalActions : ActionGroup(), DumbAware {
@@ -557,6 +557,23 @@ internal object BranchesDashboardActions {
       if (properties != null && properties.exists(SHOW_GIT_BRANCHES_LOG_PROPERTY)) {
         properties[SHOW_GIT_BRANCHES_LOG_PROPERTY] = false
       }
+    }
+  }
+
+  class FetchRemoteAction : RemoteActionBase(messagePointer("action.Git.Fetch.text")) {
+
+    override fun doAction(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
+      git4idea.GitVcs.runInBackground(object : com.intellij.openapi.progress.Task.Backgroundable(project, git4idea.i18n.GitBundle.message("fetching"), true) {
+        override fun run(indicator: com.intellij.openapi.progress.ProgressIndicator) {
+          val fetchSpecs = selectedRemotes.flatMap { (repository, remotes) ->
+            remotes.map { remote -> git4idea.fetch.GitFetchSpec(repository, remote) }
+          }
+          val result = git4idea.fetch.GitFetchSupport.fetchSupport(project).fetch(fetchSpecs)
+          com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
+            result.showNotification()
+          }
+        }
+      })
     }
   }
 
