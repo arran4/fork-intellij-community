@@ -114,7 +114,10 @@ internal class UpdateableGHPRReviewThreadCommentViewModel(
   override fun quoteBody() {
     val currentText = dataState.value.value.body
     val quotedText = currentText.lines().joinToString("\n") { "> $it" } + "\n\n"
-    thread.newReplyVm.text.value = thread.newReplyVm.text.value + quotedText
+    thread.newReplyVm.text.value = thread.newReplyVm.text.value.let { existing ->
+      if (existing.isBlank()) quotedText
+      else existing.trimEnd('\n') + "\n\n" + quotedText
+    }
     thread.newReplyVm.requestFocus()
   }
 
