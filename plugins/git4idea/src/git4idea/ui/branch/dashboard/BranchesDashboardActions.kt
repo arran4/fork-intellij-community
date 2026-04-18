@@ -88,13 +88,13 @@ internal object BranchesDashboardActions {
   class GroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayOf(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction())
   }
 
   class MultipleGroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(FetchRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayOf(FetchRemoteAction(), RemoveRemoteAction())
   }
 
   class RemoteGlobalActions : ActionGroup(), DumbAware {
@@ -591,18 +591,14 @@ internal object BranchesDashboardActions {
   class FetchRemoteAction : RemoteActionBase(messagePointer("action.Git.Fetch.text")) {
 
     override fun update(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
-      if (GitFetchSupport.fetchSupport(project).isFetchRunning) {
-        e.presentation.isEnabled = false
-        e.presentation.description = message("action.Git.Fetch.description.fetch.in.progress")
-      }
+      val isFetchRunning = GitFetchSupport.fetchSupport(project).isFetchRunning
+      e.presentation.isEnabled = !isFetchRunning
+      e.presentation.description = if (isFetchRunning) message("action.Git.Fetch.description.fetch.in.progress") else ""
     }
 
     override fun doAction(e: AnActionEvent, project: Project, selectedRemotes: Map<GitRepository, Set<GitRemote>>) {
-      val remotesToFetch = mutableListOf<com.intellij.openapi.util.Pair<GitRepository, GitRemote>>()
-      for ((repository, remotes) in selectedRemotes) {
-        for (remote in remotes) {
-          remotesToFetch.add(com.intellij.openapi.util.Pair.create(repository, remote))
-        }
+      val remotesToFetch = selectedRemotes.flatMap { (repository, remotes) ->
+        remotes.map { com.intellij.openapi.util.Pair.create(repository, it) }
       }
       GitVcs.runInBackground(object : com.intellij.openapi.progress.Task.Backgroundable(project, message("fetching"), true) {
         override fun run(indicator: com.intellij.openapi.progress.ProgressIndicator) {
