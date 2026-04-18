@@ -49,6 +49,8 @@ interface GHPRReviewThreadCommentViewModel : GHViewModelWithTextCompletion {
   val canReact: Boolean
   val reactionsVm: GHReactionsViewModel
 
+  val canQuote: Boolean
+  fun quoteBody()
   val canDelete: Boolean
   fun delete()
 }
@@ -58,7 +60,7 @@ internal class UpdateableGHPRReviewThreadCommentViewModel(
   parentCs: CoroutineScope,
   dataContext: GHPRDataContext,
   dataProvider: GHPRDataProvider,
-  thread: GHPRReviewThreadViewModel,
+  private val thread: GHPRReviewThreadViewModel,
   viewModelWithTextCompletion: GHViewModelWithTextCompletion,
   initialDataWithIndex: IndexedValue<GHPullRequestReviewComment>
 ) : GHPRReviewThreadCommentViewModel, GHViewModelWithTextCompletion by viewModelWithTextCompletion {
@@ -90,6 +92,7 @@ internal class UpdateableGHPRReviewThreadCommentViewModel(
   override val canDelete: Boolean = initialData.viewerCanDelete
   override val canEdit: Boolean = initialData.viewerCanUpdate
   override val canReact: Boolean = initialData.viewerCanReact
+  override val canQuote: Boolean = true
 
   private val _editVm = MutableStateFlow<EditViewModel?>(null)
   override val editVm: StateFlow<CodeReviewTextEditingViewModel?> = _editVm.asStateFlow()
@@ -106,6 +109,16 @@ internal class UpdateableGHPRReviewThreadCommentViewModel(
         requestFocus()
       }
     }
+  }
+
+  override fun quoteBody() {
+    val currentText = dataState.value.value.body
+    val quotedText = currentText.lines().joinToString("\n") { "> $it" } + "\n\n"
+    thread.newReplyVm.text.value = thread.newReplyVm.text.value.let { existing ->
+      if (existing.isBlank()) quotedText
+      else existing.trimEnd('\n') + "\n\n" + quotedText
+    }
+    thread.newReplyVm.requestFocus()
   }
 
   private fun stopEditing() {

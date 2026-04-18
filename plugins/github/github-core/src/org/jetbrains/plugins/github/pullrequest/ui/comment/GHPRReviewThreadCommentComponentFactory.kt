@@ -80,6 +80,13 @@ internal object GHPRReviewThreadCommentComponentFactory {
   private fun CoroutineScope.createCommentActions(vm: GHPRReviewThreadCommentViewModel): JComponent {
     val cs = this
     return HorizontalListPanel(CodeReviewCommentUIUtil.Actions.HORIZONTAL_GAP).apply {
+      if (vm.canQuote) {
+        add(CodeReviewCommentUIUtil.createQuoteButton {
+          vm.quoteBody()
+        }.apply {
+          bindDisabledIn(cs, vm.isBusy)
+        })
+      }
       if (vm.canEdit) {
         add(CodeReviewCommentUIUtil.createEditButton {
           vm.editBody()
