@@ -154,8 +154,8 @@ object CodeReviewCommentUIUtil {
   }
 
   fun createQuoteButton(actionListener: (ActionEvent) -> Unit): InlineIconButton {
-    val icon = com.intellij.ui.TextIcon(">", UIUtil.getContextHelpForeground(), com.intellij.ui.JBColor.lazy { java.awt.Color(0,0,0,0) }, 0)
-    val hoverIcon = com.intellij.ui.TextIcon(">", UIUtil.getLabelForeground(), com.intellij.ui.JBColor.lazy { java.awt.Color(0,0,0,0) }, 0)
+    val icon = com.intellij.ui.TextIcon(">", UIUtil.getContextHelpForeground(), com.intellij.ui.JBColor.TRANSPARENT, 0)
+    val hoverIcon = com.intellij.ui.TextIcon(">", UIUtil.getLabelForeground(), com.intellij.ui.JBColor.TRANSPARENT, 0)
     return InlineIconButton(icon, hoverIcon, tooltip = CollaborationToolsBundle.message("review.comments.quote.tooltip")).apply {
       this.actionListener = ActionListener {
         actionListener(it)
