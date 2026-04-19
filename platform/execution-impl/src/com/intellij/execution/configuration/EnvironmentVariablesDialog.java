@@ -8,9 +8,13 @@ import com.intellij.execution.util.EnvironmentVariable;
 import com.intellij.icons.AllIcons;
 import com.intellij.idea.ActionsBundle;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionPopupMenu;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.DumbAwareAction;
+import com.intellij.ui.PopupHandler;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.openapi.util.text.StringUtil;
@@ -26,8 +30,10 @@ import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JRadioButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
@@ -209,6 +215,33 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
     return myAlwaysIncludeSystemVars || myIncludeSystemVarsCb != null && myIncludeSystemVarsCb.isSelected();
   }
 
+  private static class QuoteEnvironmentVariableDialog extends DialogWrapper {
+    private final JRadioButton mySingleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.single.type"));
+    private final JRadioButton myDoubleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.double.type"));
+
+    protected QuoteEnvironmentVariableDialog(Component parent) {
+      super(parent, true);
+      setTitle(ExecutionBundle.message("env.variable.quote"));
+      ButtonGroup group = new ButtonGroup();
+      group.add(mySingleQuoteButton);
+      group.add(myDoubleQuoteButton);
+      myDoubleQuoteButton.setSelected(true);
+      init();
+    }
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+      JPanel panel = new JPanel(new java.awt.GridLayout(2, 1));
+      panel.add(mySingleQuoteButton);
+      panel.add(myDoubleQuoteButton);
+      return panel;
+    }
+
+    public boolean isSingleQuote() {
+      return mySingleQuoteButton.isSelected();
+    }
+  }
+
   protected class MyEnvVariablesTable extends EnvVariablesTable {
     protected final boolean myUserList;
 
@@ -218,6 +251,55 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
       tableView.setVisibleRowCount(JBTable.PREFERRED_SCROLLABLE_VIEWPORT_HEIGHT_IN_ROWS);
       setValues(list);
       setPasteActionEnabled(myUserList);
+
+      if (myUserList) {
+        tableView.addMouseListener(new PopupHandler() {
+          @Override
+          public void invokePopup(Component comp, int x, int y) {
+            int row = tableView.rowAtPoint(new java.awt.Point(x, y));
+            int col = tableView.columnAtPoint(new java.awt.Point(x, y));
+            if (row != -1 && col != -1 && tableView.convertColumnIndexToModel(col) == 1) { // value column
+              if (!tableView.isRowSelected(row)) {
+                tableView.setRowSelectionInterval(row, row);
+              }
+              DefaultActionGroup group = new DefaultActionGroup();
+              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.unquote")) {
+                @Override
+                public void actionPerformed(@NotNull AnActionEvent e) {
+                  MyEnvVariablesTable.this.stopEditing();
+                  for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
+                    var.setValue(StringUtil.unquoteString(var.getValue()));
+                  }
+                  MyEnvVariablesTable.this.setModified();
+                  tableView.getListTableModel().fireTableDataChanged();
+                }
+              });
+              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.quote")) {
+                @Override
+                public void actionPerformed(@NotNull AnActionEvent e) {
+                  QuoteEnvironmentVariableDialog dialog = new QuoteEnvironmentVariableDialog(tableView);
+                  if (dialog.showAndGet()) {
+                    MyEnvVariablesTable.this.stopEditing();
+                    boolean isSingle = dialog.isSingleQuote();
+                    for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
+                      String val = StringUtil.unquoteString(var.getValue());
+                      if (isSingle) {
+                        var.setValue("'" + val + "'");
+                      } else {
+                        var.setValue("\"" + val + "\"");
+                      }
+                    }
+                    MyEnvVariablesTable.this.setModified();
+                    tableView.getListTableModel().fireTableDataChanged();
+                  }
+                }
+              });
+              ActionPopupMenu popupMenu = ActionManager.getInstance().createActionPopupMenu("EnvVarPopup", group);
+              popupMenu.getComponent().show(comp, x, y);
+            }
+          }
+        });
+      }
     }
 
     @Override
