@@ -218,6 +218,55 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
       tableView.setVisibleRowCount(JBTable.PREFERRED_SCROLLABLE_VIEWPORT_HEIGHT_IN_ROWS);
       setValues(list);
       setPasteActionEnabled(myUserList);
+
+      if (myUserList) {
+        tableView.addMouseListener(new com.intellij.ui.PopupHandler() {
+          @Override
+          public void invokePopup(Component comp, int x, int y) {
+            int col = tableView.columnAtPoint(new java.awt.Point(x, y));
+            if (col != -1 && tableView.convertColumnIndexToModel(col) == 1) { // value column
+              com.intellij.openapi.actionSystem.DefaultActionGroup group = new com.intellij.openapi.actionSystem.DefaultActionGroup();
+              group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.unquote")) {
+                @Override
+                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                  MyEnvVariablesTable.this.stopEditing();
+                  for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
+                    var.setValue(StringUtil.unquoteString(var.getValue()));
+                    MyEnvVariablesTable.this.setModified();
+                  }
+                  tableView.getListTableModel().fireTableDataChanged();
+                }
+              });
+              group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.quote.single")) {
+                @Override
+                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                  MyEnvVariablesTable.this.stopEditing();
+                  for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
+                    String val = StringUtil.unquoteString(var.getValue());
+                    var.setValue("'" + val + "'");
+                    MyEnvVariablesTable.this.setModified();
+                  }
+                  tableView.getListTableModel().fireTableDataChanged();
+                }
+              });
+              group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.quote.double")) {
+                @Override
+                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                  MyEnvVariablesTable.this.stopEditing();
+                  for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
+                    String val = StringUtil.unquoteString(var.getValue());
+                    var.setValue("\"" + val + "\"");
+                    MyEnvVariablesTable.this.setModified();
+                  }
+                  tableView.getListTableModel().fireTableDataChanged();
+                }
+              });
+              com.intellij.openapi.actionSystem.ActionPopupMenu popupMenu = com.intellij.openapi.actionSystem.ActionManager.getInstance().createActionPopupMenu("EnvVarPopup", group);
+              popupMenu.getComponent().show(comp, x, y);
+            }
+          }
+        });
+      }
     }
 
     @Override
