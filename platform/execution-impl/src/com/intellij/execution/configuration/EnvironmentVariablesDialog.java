@@ -30,8 +30,10 @@ import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
 import javax.swing.JComponent;
+import javax.swing.JRadioButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTable;
@@ -213,6 +215,33 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
     return myAlwaysIncludeSystemVars || myIncludeSystemVarsCb != null && myIncludeSystemVarsCb.isSelected();
   }
 
+  private static class QuoteEnvironmentVariableDialog extends DialogWrapper {
+    private final JRadioButton mySingleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.single"));
+    private final JRadioButton myDoubleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.double"));
+
+    protected QuoteEnvironmentVariableDialog(Component parent) {
+      super(parent, true);
+      setTitle(ExecutionBundle.message("env.variable.quote"));
+      ButtonGroup group = new ButtonGroup();
+      group.add(mySingleQuoteButton);
+      group.add(myDoubleQuoteButton);
+      myDoubleQuoteButton.setSelected(true);
+      init();
+    }
+
+    @Override
+    protected @Nullable JComponent createCenterPanel() {
+      JPanel panel = new JPanel(new java.awt.GridLayout(2, 1));
+      panel.add(mySingleQuoteButton);
+      panel.add(myDoubleQuoteButton);
+      return panel;
+    }
+
+    public boolean isSingleQuote() {
+      return mySingleQuoteButton.isSelected();
+    }
+  }
+
   protected class MyEnvVariablesTable extends EnvVariablesTable {
     protected final boolean myUserList;
 
@@ -245,28 +274,24 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
                   tableView.getListTableModel().fireTableDataChanged();
                 }
               });
-              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.quote.single")) {
+              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.quote")) {
                 @Override
                 public void actionPerformed(@NotNull AnActionEvent e) {
-                  MyEnvVariablesTable.this.stopEditing();
-                  for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
-                    String val = StringUtil.unquoteString(var.getValue());
-                    var.setValue("'" + val + "'");
+                  QuoteEnvironmentVariableDialog dialog = new QuoteEnvironmentVariableDialog(tableView);
+                  if (dialog.showAndGet()) {
+                    MyEnvVariablesTable.this.stopEditing();
+                    boolean isSingle = dialog.isSingleQuote();
+                    for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
+                      String val = StringUtil.unquoteString(var.getValue());
+                      if (isSingle) {
+                        var.setValue("'" + val + "'");
+                      } else {
+                        var.setValue("\"" + val + "\"");
+                      }
+                    }
+                    MyEnvVariablesTable.this.setModified();
+                    tableView.getListTableModel().fireTableDataChanged();
                   }
-                  MyEnvVariablesTable.this.setModified();
-                  tableView.getListTableModel().fireTableDataChanged();
-                }
-              });
-              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.quote.double")) {
-                @Override
-                public void actionPerformed(@NotNull AnActionEvent e) {
-                  MyEnvVariablesTable.this.stopEditing();
-                  for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
-                    String val = StringUtil.unquoteString(var.getValue());
-                    var.setValue("\"" + val + "\"");
-                  }
-                  MyEnvVariablesTable.this.setModified();
-                  tableView.getListTableModel().fireTableDataChanged();
                 }
               });
               ActionPopupMenu popupMenu = ActionManager.getInstance().createActionPopupMenu("EnvVarPopup", group);
