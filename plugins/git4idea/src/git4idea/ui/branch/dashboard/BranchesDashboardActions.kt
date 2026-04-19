@@ -93,13 +93,13 @@ internal object BranchesDashboardActions {
   class GroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayOf<AnAction>(FetchRemoteAction(), EditRemoteAction(), RemoveRemoteAction())
   }
 
   class MultipleGroupActions : ActionGroup(), DumbAware {
 
     override fun getChildren(e: AnActionEvent?): Array<AnAction> =
-      arrayListOf<AnAction>(FetchRemoteAction(), RemoveRemoteAction()).toTypedArray()
+      arrayOf<AnAction>(FetchRemoteAction(), RemoveRemoteAction())
   }
 
   class RemoteGlobalActions : ActionGroup(), DumbAware {
