@@ -216,8 +216,8 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
   }
 
   private static class QuoteEnvironmentVariableDialog extends DialogWrapper {
-    private final JRadioButton mySingleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.single"));
-    private final JRadioButton myDoubleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.double"));
+    private final JRadioButton mySingleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.single.type"));
+    private final JRadioButton myDoubleQuoteButton = new JRadioButton(ExecutionBundle.message("env.variable.quote.double.type"));
 
     protected QuoteEnvironmentVariableDialog(Component parent) {
       super(parent, true);
