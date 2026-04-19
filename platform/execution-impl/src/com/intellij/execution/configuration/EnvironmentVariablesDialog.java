@@ -8,9 +8,13 @@ import com.intellij.execution.util.EnvironmentVariable;
 import com.intellij.icons.AllIcons;
 import com.intellij.idea.ActionsBundle;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
+import com.intellij.openapi.actionSystem.ActionManager;
+import com.intellij.openapi.actionSystem.ActionPopupMenu;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.DefaultActionGroup;
 import com.intellij.openapi.project.DumbAwareAction;
+import com.intellij.ui.PopupHandler;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.ValidationInfo;
 import com.intellij.openapi.util.text.StringUtil;
@@ -220,7 +224,7 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
       setPasteActionEnabled(myUserList);
 
       if (myUserList) {
-        tableView.addMouseListener(new com.intellij.ui.PopupHandler() {
+        tableView.addMouseListener(new PopupHandler() {
           @Override
           public void invokePopup(Component comp, int x, int y) {
             int row = tableView.rowAtPoint(new java.awt.Point(x, y));
@@ -229,43 +233,43 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
               if (!tableView.isRowSelected(row)) {
                 tableView.setRowSelectionInterval(row, row);
               }
-              com.intellij.openapi.actionSystem.DefaultActionGroup group = new com.intellij.openapi.actionSystem.DefaultActionGroup();
-              group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.unquote")) {
+              DefaultActionGroup group = new DefaultActionGroup();
+              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.unquote")) {
                 @Override
-                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                public void actionPerformed(@NotNull AnActionEvent e) {
                   MyEnvVariablesTable.this.stopEditing();
                   for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
                     var.setValue(StringUtil.unquoteString(var.getValue()));
-                    MyEnvVariablesTable.this.setModified();
                   }
+                  MyEnvVariablesTable.this.setModified();
                   tableView.getListTableModel().fireTableDataChanged();
                 }
               });
-              group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.quote.single")) {
+              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.quote.single")) {
                 @Override
-                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                public void actionPerformed(@NotNull AnActionEvent e) {
                   MyEnvVariablesTable.this.stopEditing();
                   for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
                     String val = StringUtil.unquoteString(var.getValue());
                     var.setValue("'" + val + "'");
-                    MyEnvVariablesTable.this.setModified();
                   }
+                  MyEnvVariablesTable.this.setModified();
                   tableView.getListTableModel().fireTableDataChanged();
                 }
               });
-              group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.quote.double")) {
+              group.add(new DumbAwareAction(ExecutionBundle.message("env.variable.quote.double")) {
                 @Override
-                public void actionPerformed(@NotNull com.intellij.openapi.actionSystem.AnActionEvent e) {
+                public void actionPerformed(@NotNull AnActionEvent e) {
                   MyEnvVariablesTable.this.stopEditing();
                   for (EnvironmentVariable var : MyEnvVariablesTable.this.getSelection()) {
                     String val = StringUtil.unquoteString(var.getValue());
                     var.setValue("\"" + val + "\"");
-                    MyEnvVariablesTable.this.setModified();
                   }
+                  MyEnvVariablesTable.this.setModified();
                   tableView.getListTableModel().fireTableDataChanged();
                 }
               });
-              com.intellij.openapi.actionSystem.ActionPopupMenu popupMenu = com.intellij.openapi.actionSystem.ActionManager.getInstance().createActionPopupMenu("EnvVarPopup", group);
+              ActionPopupMenu popupMenu = ActionManager.getInstance().createActionPopupMenu("EnvVarPopup", group);
               popupMenu.getComponent().show(comp, x, y);
             }
           }
