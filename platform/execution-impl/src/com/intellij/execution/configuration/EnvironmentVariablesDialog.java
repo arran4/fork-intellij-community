@@ -223,8 +223,12 @@ public class EnvironmentVariablesDialog extends DialogWrapper {
         tableView.addMouseListener(new com.intellij.ui.PopupHandler() {
           @Override
           public void invokePopup(Component comp, int x, int y) {
+            int row = tableView.rowAtPoint(new java.awt.Point(x, y));
             int col = tableView.columnAtPoint(new java.awt.Point(x, y));
-            if (col != -1 && tableView.convertColumnIndexToModel(col) == 1) { // value column
+            if (row != -1 && col != -1 && tableView.convertColumnIndexToModel(col) == 1) { // value column
+              if (!tableView.isRowSelected(row)) {
+                tableView.setRowSelectionInterval(row, row);
+              }
               com.intellij.openapi.actionSystem.DefaultActionGroup group = new com.intellij.openapi.actionSystem.DefaultActionGroup();
               group.add(new com.intellij.openapi.project.DumbAwareAction(ExecutionBundle.message("env.variable.unquote")) {
                 @Override
